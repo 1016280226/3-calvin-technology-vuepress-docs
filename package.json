@@ -1,0 +1,18 @@
+{
+  "name": "Calvin",
+  "version": "2.5.0",
+  "description": "自律成就自由，学习改变未来 ！",
+  "author": "Calvin",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@vuepress/plugin-back-to-top": "^1.0.0-rc.1",
+    "vuepress": "^1.3.1"
+  },
+  "scripts": {
+    "docs:dev": "vuepress dev docs",
+    "docs:build": "vuepress build docs"
+  },
+  "dependencies": {
+    "vuepress-theme-reco": "^1.5.7"
+  }
+}

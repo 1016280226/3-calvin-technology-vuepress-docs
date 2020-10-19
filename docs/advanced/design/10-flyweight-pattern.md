@@ -1,0 +1,1 @@
+# 亨元模式 （Flyweight Pattern）
