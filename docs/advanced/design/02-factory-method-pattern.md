@@ -1,1 +1,1143 @@
 # 工厂方法 (Factory Method Pattern)
+
+## 一、工厂模式是什么？
+
+### 工厂模式（Factory Pattern）
+
+- #### 是把所有需要`创建的对象放到工厂进行管理`，创建对象时`不会对客户端暴露创建逻辑`，需要时从`工厂中获取出来`。
+
+- #### 是通过使用一个共同的接口来指向新创建的对象。
+
+- #### 属于`创建型模式`
+
+---
+
+## 二、作用
+
+- 主要解决接口选择的问题
+
+---
+
+## 三、应用场景
+
+> - 日志记录器：记录可能记录到本地硬盘、系统事件、远程服务器等，用户可以选择记录日志到什么地方。
+> - 数据库访问：当用户不知道最后系统采用哪一类数据库，以及数据库可能有变化时。 
+> - 设计一个连接服务器的框架，需要三个协议，"POP3"、"IMAP"、"HTTP"，可以把这三个作为产品类，共同实现一个接口。
+> - Spring 框架种的Bean工厂
+
+---
+
+##  四、实现
+
+> 代码链接：https://github.com/1016280226/design-patterns
+
+### 工厂模式-分为3种类型: `简单工厂模式`、 `工厂方法模式` 、`抽象工厂模式`
+
+### 案例1-简单工厂模式
+
+<br><br>
+
+<center>
+    <img src="../../../docs/.vuepress/public/design/factory_simple_model.gif" style="zoom:100%;" /><br><br>
+	<font size=4px><b>简单工厂UML模型</b></font>
+</center>
+
+
+#### 一个工厂中有各种产品，创建在一个类中，客户无需知道具体产品的名称，只需要知道产品类所对应的参数即可。
+
+#### 1. 定义一个汽车品牌
+
+```java
+package com.car.smiple.service;
+
+/**
+ * description: 汽车
+ * date: 2020/9/9 15:18
+ * author: Calvin
+ * version: 1.0
+ */
+public interface CarService {
+
+    /**
+     * 品牌
+     * @return 品牌简介
+     */
+    String brand();
+}
+```
+
+#### 2. 实现汽车2个具体汽车品牌：特斯拉、蔚来
+
+```java
+package com.car.smiple.service.impl;
+
+import com.car.smiple.service.CarService;
+
+/**
+ * description: 特斯拉汽车
+ * date: 2020/9/9 15:22
+ * author: Calvin
+ * version: 1.0
+ */
+public class TslaCarServiceImpl implements CarService {
+
+    @Override
+    public String brand() {
+        String brandIntroduce = "我是特斯拉, 我是电动汽车";
+        System.out.println(brandIntroduce);
+        return brandIntroduce;
+    }
+}
+```
+
+```java
+package com.car.smiple.service.impl;
+
+
+import com.car.smiple.service.CarService;
+
+/**
+ * description: 蔚来汽车
+ * date: 2020/9/9 15:24
+ * author: Calvin
+ * version: 1.0
+ */
+public class NioCarServiceImpl implements CarService {
+
+    @Override
+    public String brand() {
+        String brandIntroduce = "我是蔚来汽车，我是电动汽车";
+        System.out.println(brandIntroduce);
+        return brandIntroduce;
+    }
+}
+```
+
+#### 3. 开设一个 4S汽车服务工厂
+
+- 职责：
+  - 管理这些汽车和生产汽车 （`创建对象`）
+  - 用户购买汽车需要告诉4S汽车服务中心，我需要什么样的汽车，然后给用户介绍。（`调用过程`）
+  
+    
+
+ ```java
+package com.car.smiple.factory;
+
+import com.car.smiple.enumeration.CarBrandEnum;
+import com.car.smiple.service.CarService;
+
+/**
+ * description: 4S 汽车销售工厂
+ * date: 2020/9/9 15:26
+ * author: Calvin
+ * version: 1.0
+ */
+public class AutomobileSalesFactory {
+
+    /**
+     * 根据汽车名称，介绍对应的汽车信息
+     * @param carName 汽车名称
+     * @return 对应的汽车信息
+     * @throws ClassNotFoundException
+     * @throws IllegalAccessException
+     * @throws InstantiationException
+     */
+    public static CarService introduceCarBrand(String carName) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+        CarBrandEnum carBrandEnum = CarBrandEnum.valueOf(carName);
+        if (null != carBrandEnum) {
+            String beanName = carBrandEnum.getBeanName();
+            Class<?> beanClass = Class.forName(beanName);
+            return (CarService) beanClass.newInstance();
+        }
+        throw new RuntimeException("没有该品牌汽车!");
+    }
+}
+ ```
+
+#### 4. 客户来访问 4S汽车服务工厂 查询汽车品牌	
+
+```java
+package com.car.smiple.controller;
+
+import com.car.smiple.factory.AutomobileSalesFactory;
+import com.car.smiple.service.CarService;
+import lombok.SneakyThrows;
+import org.apache.ibatis.annotations.Param;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * description: CarController
+ * date: 2020/9/9 15:45
+ * author: Calvin
+ * version: 1.0
+ */
+@RestController
+@RequestMapping(value = "car/introduce")
+public class CarController {
+
+    @SneakyThrows
+    @GetMapping("brand")
+    public String brand(@Param("name") String name) {
+        CarService carService = AutomobileSalesFactory.introduceCarBrand(name);
+        return carService.brand();
+    }
+
+}
+```
+
+#### 通过访问 
+
+- **GET** http://localhost:8080/car/introduce/brand?name=NIO
+- **GET** http://localhost:8080/car/introduce/brand?name=TSLA
+
+#### 运行结果：
+
+```verilog
+我是蔚来汽车,我是电动汽车
+我是特斯拉, 我是电动汽车
+```
+
+#### 优缺点：
+
+| <font color=#42b983 size=4px><b>优点</b></font>              | <font color=red size=4px><b>缺点：</b></font>                |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| <font color=#42b983 size=4px><b>明确区分了各自的职责和权力，整个软件体系结构的优化。</b></font> | <font color=red size=4px><b>工厂的职责过重，而且当类型过多时不利于系统的扩展维护。</b></font> |
+
+---
+
+### 案例二：工厂方式模式
+
+<br><br>
+
+<center>
+    <img src="../../../docs/.vuepress/public/design/factory_method_model.gif" style="zoom:100%;" /><br><br>
+	<font size=4px><b>工厂方法UML模型</b></font>
+</center>
+
+
+- 定义一个创建产品对象的工厂接口，将产品对象的实际创建工作推迟到具体子工厂类当中。这满足创建型模式中所要求的“创建与使用相分离”的特点。
+
+- 我们把被创建的对象称为“产品”，把创建产品的对象称为“工厂”。
+
+- 是对简单工厂模式的进一步抽象化，其好处是可以使系统在不修改原来代码的情况下引进新的产品，即满足开闭原则。
+
+#### 主要角色
+
+- `抽象工厂（Abstract Factory）`
+
+  > 提供了创建产品的接口，调用者通过它访问具体工厂的工厂方法来创建产品。
+
+- `具体工厂（ConcreteFactory）`
+
+  > 主要是实现抽象工厂中的抽象方法，完成具体产品的创建。
+
+- `抽象产品（Product）`
+
+  > 定义了产品的规范，描述了产品的主要特性和功能。
+
+- `具体产品（ConcreteProduct）`
+
+  > 实现了抽象产品角色所定义的接口，由具体工厂来创建，它同具体工厂之间一一对应。
+
+<br>
+
+#### 1. 一个 4S 汽车销售服务中心为抽象工厂（Abstract Factory）
+
+- 不再负责所有的产品的创建，而是将具体创建的工作交给子类去做。
+- 职责：仅负责给出具体工厂子类必须实现的接口，而不接触哪一个产品类应当被实例化这种细节。
+
+```java
+package com.car.method.factory;
+
+import com.car.method.enumeration.CarCategoryEnum;
+import com.car.method.service.CarService;
+
+import java.lang.reflect.Method;
+
+/**
+ * description: 4S 汽车销售服务中心
+ * date: 2020/9/9 17:17
+ * author: Calvin
+ * version: 1.0
+ */
+public abstract class AutomobileSalesServiceFactory {
+
+    /**
+     * 根据汽车种类，创建汽车
+     *
+     * @param carCategory 汽车种类
+     * @return 具体汽车
+     */
+    abstract CarService createCar(String carCategory);
+
+
+    /**
+     * 获取汽车品牌销售工厂
+     *
+     * @param brand 汽车品牌
+     * @return 相应的汽车品牌销售工厂
+     */
+    public static Object getBrandFactory(String brand) {
+        try {
+            CarCategoryEnum categoryEnum = CarCategoryEnum.valueOf(brand);
+            String beanName = categoryEnum.getFactoryBeanName();
+            Class<?> beanClass = Class.forName(beanName);
+            Object o = beanClass.newInstance();
+            return o;
+        } catch (Exception e) {
+            throw new RuntimeException("没有该品牌汽车!");
+        }
+    }
+
+    /**
+     * 获取品牌汽车的型号
+     *
+     * @param carBrandFactory 品牌汽车厂商
+     * @param model           汽车型号
+     * @return 返回对应的汽车型号
+     */
+    public static CarService getCarModel(Object carBrandFactory, String model) {
+        try {
+            Method method = carBrandFactory.getClass().getDeclaredMethod("createCar", String.class);
+            CarService carService = (CarService) method.invoke(carBrandFactory, model);
+            return carService;
+        } catch (Exception e) {
+            throw new RuntimeException("没有该型号汽车!");
+        }
+    }
+}
+```
+
+#### 2. 具体工厂（ConcreteFactory）有：特斯拉销售服务店、蔚来销售服务店
+
+-  职责：具有创建对象功能，如：通过车型号，获取创建具体类型的车型
+
+- a. 使用枚举来存储汽车型号，提醒：建议使用数据库！
+
+```java
+package com.car.method.enumeration;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+/**
+ * description: TslaCarModleEnum
+ * date: 2020/9/9 17:47
+ * author: Calvin
+ * version: 1.0
+ */
+@Getter
+@AllArgsConstructor
+public enum TslaCarModleEnum {
+
+    MODEL_S("特斯拉", "com.car.method.service.impl.TslaModelSCarServiceImpl"),
+    MODEL_X("特斯拉", "com.car.method.service.impl.TslaModelXCarServiceImpl"),
+    MODEL_3("特斯拉", "com.car.method.service.impl.TslaModel3CarServiceImpl"),
+    ;
+
+
+    /** 名称 */
+    private String name;
+    /** 具体实现类的路径 */
+    private String beanName;
+}
+```
+
+```java
+package com.car.method.enumeration;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+/**
+ * description: TslaCarModleEnum
+ * date: 2020/9/9 17:47
+ * author: Calvin
+ * version: 1.0
+ */
+@Getter
+@AllArgsConstructor
+public enum  NioCarModeEnum {
+
+    EC6("蔚来", "com.car.method.service.impl.NioEC6CarServiceImpl"),
+    ES6("蔚来", "com.car.method.service.impl.NioES6CarServiceImpl"),
+    ES8("蔚来", "com.car.method.service.impl.NioES8CarServiceImpl"),
+    ;
+
+    /** 名称 */
+    private String name;
+    /** 具体实现类的路径 */
+    private String beanName;
+}
+```
+
+- b. 通过`特斯拉工厂`或`蔚来工厂`，获取对应的分类`汽车型号`。
+
+```java
+package com.car.method.factory;
+
+
+import com.car.method.enumeration.CarCategoryEnum;
+import com.car.method.enumeration.TslaCarModleEnum;
+import com.car.method.service.CarService;
+import lombok.SneakyThrows;
+
+/**
+ * description: 特斯拉工厂
+ * date: 2020/9/9 17:24
+ * author: Calvin
+ * version: 1.0
+ */
+public class TslaFactory extends AutomobileSalesServiceFactory {
+
+    @SneakyThrows
+    @Override
+    public CarService createCar(String model) {
+        CarService carService = null;
+        TslaCarModleEnum tslaCarModleEnum = TslaCarModleEnum.valueOf(model);
+        if (null != tslaCarModleEnum) {
+            String beanName = tslaCarModleEnum.getBeanName();
+            Class<?> beanClass = Class.forName(beanName);
+            carService = (com.car.method.service.CarService) beanClass.newInstance();
+        }
+        return carService;
+    }
+
+    @Override
+    String getCarBrand() {
+        return CarCategoryEnum.TSLA.getBrand();
+    }
+}
+
+```
+
+```java
+package com.car.method.factory;
+
+
+import com.car.method.enumeration.CarCategoryEnum;
+import com.car.method.enumeration.NioCarModeEnum;
+import com.car.method.service.CarService;
+import lombok.SneakyThrows;
+
+/**
+ * description: 蔚来工厂
+ * date: 2020/9/9 17:24
+ * author: Calvin
+ * version: 1.0
+ */
+public class NioFactory extends AutomobileSalesServiceFactory {
+
+    @SneakyThrows
+    @Override
+    public CarService createCar(String model)  {
+        com.car.method.service.CarService carService = null;
+        NioCarModeEnum nioCarModeEnum = NioCarModeEnum.valueOf(model);
+        if (null != nioCarModeEnum) {
+            String beanName = nioCarModeEnum.getBeanName();
+            Class<?> beanClass = Class.forName(beanName);
+            carService = (com.car.method.service.CarService) beanClass.newInstance();
+        }
+        return carService;
+    }
+
+    @Override
+    String getCarBrand() {
+        return CarCategoryEnum.NIO.getBrand();
+    }
+}
+
+```
+
+#### 3. 抽象产品（Product）汽车
+
+- 行为：`创建汽车`
+
+```java
+package com.car.method.service;
+
+/**
+ * description: 汽车
+ * date: 2020/9/9 15:18
+ * author: Calvin
+ * version: 1.0
+ */
+public interface CarService {
+
+    /**
+     * 创建汽车
+     * @return 具体汽车
+     */
+    String create();
+}
+```
+
+#### 4. 具体产品（ConcreteProduct）不同型号的汽车: 1. 特斯拉型号有：Model 3、Model S 、Modle X；2. 蔚来型号有：EC6、ES6、ES8
+
+```java
+package com.car.method.service.impl;
+
+import com.car.method.service.CarService;
+
+/**
+ * description: 特斯拉汽车-MODEL 3
+ * date: 2020/9/9 15:22
+ * author: Calvin
+ * version: 1.0
+ */
+public class TslaModel3CarServiceImpl implements CarService {
+
+    @Override
+    public String create() {
+        String car = "我是特斯拉, 我是电动汽车, 我的型号是 Model 3";
+        System.out.println(car);
+        return car;
+    }
+}
+```
+
+```java
+package com.car.method.service.impl;
+
+import com.car.method.service.CarService;
+
+/**
+ * description: 特斯拉汽车-MODEL S
+ * date: 2020/9/9 15:22
+ * author: Calvin
+ * version: 1.0
+ */
+public class TslaModelSCarServiceImpl implements CarService {
+
+    @Override
+    public String create() {
+        String car = "我是特斯拉, 我是电动汽车, 我的型号是 Model S";
+        System.out.println(car);
+        return car;
+    }
+}
+```
+
+```java
+package com.car.method.service.impl;
+
+import com.car.method.service.CarService;
+
+/**
+ * description: 特斯拉汽车-MODEL X
+ * date: 2020/9/9 15:22
+ * author: Calvin
+ * version: 1.0
+ */
+public class TslaModelXCarServiceImpl implements CarService {
+
+    @Override
+    public String create() {
+        String car = "我是特斯拉, 我是电动汽车, 我的型号是 Model X, 豪华旗舰 SUV";
+        System.out.println(car);
+        return car;
+    }
+}
+```
+
+```java
+package com.car.method.service.impl;
+
+
+import com.car.method.service.CarService;
+
+/**
+ * description: 蔚来汽车-EC6
+ * date: 2020/9/9 15:24
+ * author: Calvin
+ * version: 1.0
+ */
+public class NioEC6CarServiceImpl implements CarService {
+
+    @Override
+    public String create() {
+        String car = "我是蔚来, 我是电动汽车, 我的型号是 EC6";
+        System.out.println(car);
+        return car;
+    }
+}
+```
+
+```java
+package com.car.method.service.impl;
+
+
+import com.car.method.service.CarService;
+
+/**
+ * description: 蔚来汽车-ES6
+ * date: 2020/9/9 15:24
+ * author: Calvin
+ * version: 1.0
+ */
+public class NioES6CarServiceImpl implements CarService {
+
+    @Override
+    public String create() {
+        String car = "我是蔚来, 我是电动汽车, 我的型号是 ES6";
+        System.out.println(car);
+        return car;
+    }
+}
+
+```
+
+```java
+package com.car.method.service.impl;
+
+
+import com.car.method.service.CarService;
+
+/**
+ * description: 蔚来汽车-ES8
+ * date: 2020/9/9 15:24
+ * author: Calvin
+ * version: 1.0
+ */
+public class NioES8CarServiceImpl implements CarService {
+
+    @Override
+    public String create() {
+        String car = "我是蔚来, 我是电动汽车, 我的型号是 ES8";
+        System.out.println(car);
+        return car;
+    }
+}
+```
+
+#### 5. 客户来选择购买汽车需要去到 4S 销售服务中心，告诉 4S 店具体的汽车品牌和型号，4S 店会通过查询这个汽车品牌和型号的销售服务店，让客户下单购买。
+
+```java
+package com.car.method.enumeration;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+/**
+ * description: 汽车品牌枚举
+ * date: 2020/9/9 15:33
+ * author: Calvin
+ * version: 1.0
+ */
+@Getter
+@AllArgsConstructor
+public enum CarCategoryEnum {
+
+    NIO("蔚来工厂", "蔚来", "com.car.method.factory.NioFactory"),
+    TSLA("特斯拉工厂", "特斯拉", "com.car.method.factory.TslaFactory"),
+    ;
+
+    /** 名称 */
+    private String factory;
+    /** 品牌 */
+    private String brand;
+    /** 具体实现类的路径 */
+    private String factoryBeanName;
+
+}
+```
+
+```java
+package com.car.method.controller;
+
+import com.car.method.factory.AutomobileSalesServiceFactory;
+import com.car.method.service.CarService;
+import org.apache.ibatis.annotations.Param;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * description: 4S 汽车服务中心
+ * date: 2020/9/9 15:45
+ * author: Calvin
+ * version: 1.0
+ */
+@RestController(value = "CarController2")
+@RequestMapping(value = "car/sale")
+public class CarController {
+
+    @GetMapping("brand")
+    public String barndAndModel(@Param("name") String name, @Param("model") String model) {
+        // 1. 获取对应的品牌汽车工厂
+        Object carBrandFactory = AutomobileSalesServiceFactory.getBrandFactory(name);
+        // 2. 获取该品牌汽车型号
+        CarService carService = AutomobileSalesServiceFactory.getCarModel(carBrandFactory, model);
+        return carService.create();
+    }
+}
+```
+
+#### 通过访问 
+
+> - http://localhost:8080/car/sale/brand?name=NIO&model=EC6
+> - http://localhost:8080/car/sale/brand?name=TSLA&model=MODEL_X
+> - http://localhost:8080/car/sale/brand?name=TSLA&model=MODEL_4
+> - http://localhost:8080/car/sale/brand?name=BYD&model=DM
+
+#### 运行结果
+
+```verilog
+我是蔚来, 我是电动汽车, 我的型号是 EC6
+我是特斯拉, 我是电动汽车, 我的型号是 Model X, 豪华旗舰 SUV
+当前该【特斯拉】品牌的工厂没有该型号 MODEL_4 汽车!
+暂无该【BYD】品牌汽车!
+```
+
+#### 优缺点
+
+| <font color=#42b983 size=4px><b>优点</b></font>              | <font color=red size=4px><b>缺点：</b></font>                |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| <font color=#42b983 size=4px><b>1. 用户只需要知道具体工厂的名称就可得到所要的产品，无须知道产品的具体创建过程；</b></font> | <font color=red size=4px><b>每增加一个产品就要增加一个具体产品类和一个对应的具体工厂类，这增加了系统的复杂度。</b></font> |
+| <font color=#42b983 size=4px><b>2. 在系统增加新的产品时只需要添加具体产品类和对应的具体工厂类，无须对原工厂进行任何修改，满足开闭原则；</b></font> |                                                              |
+
+---
+
+### 案例三：抽象工厂模式
+
+<br>
+
+<font size=4px>工厂方法模式中考虑的是一类产品的生产，如畜牧场只养动物、电视机厂只生产电视机、计算机软件学院只培养计算机软件专业的学生等。</font>
+
+<font size=4px>同种类称为同等级，也就是说：工厂方法模式只考虑生产同等级的产品，但是在现实生活中许多工厂是综合型的工厂，能生产多等级（种类） 的产品，如农场里既养动物又种植物，电器厂既生产电视机又生产洗衣机或空调，大学既有软件专业又有生物专业等。</font>
+
+<font size=4px>抽象工厂模式将考虑多等级产品的生产，将同一个具体工厂所生产的位于不同等级的一组产品称为一个产品族。</font><br><br>
+
+
+
+<center>
+    <img src="../../../docs/.vuepress/public/design/factory_abstract_example.gif" style="zoom:100%;" /><br><br>
+	<font size=4px><b>图 1 所示的是海尔工厂和 TCL 工厂所生产的电视机与空调对应的关系图</b></font>
+</center>
+
+<br>
+
+
+
+<center>
+    <img src="../../../docs/.vuepress/public/design/factory_abstract_model.gif" style="zoom:100%;" /><br><br>
+	<font size=4px><b>抽象工厂UML模型</b></font>
+</center>
+
+
+
+#### 抽象工厂模式
+
+- ##### 是一种为访问类提供一个创建一组相关或相互依赖对象的接口，且访问类无须指定所要产品的具体类就能得到同族的不同等级的产品的模式结构。
+
+- ##### 抽象工厂模式是工厂方法模式的升级版本，工厂方法模式只生产一个等级的产品，而抽象工厂模式可生产多个等级的产品。(**`加工厂`**)
+
+
+
+#### 使用抽象工厂模式一般要满足以下条件。
+
+- ##### 系统中有多个产品族，每个具体工厂创建同一族但属于不同等级结构的产品。
+
+- ##### 系统一次只可能消费其中某一族产品，即同族的产品一起使用。
+
+
+
+#### 抽象工厂模式-主要角色
+
+- `抽象工厂（Abstract Factory）`
+
+  > 提供了创建产品的接口，它包含多个创建产品的方法 ，可以创建多个不同等级的产品。
+
+- `具体工厂（ConcreteFactory）`
+
+  > 主要是实现抽象工厂中的多个抽象方法，完成具体产品的创建。
+
+- `抽象产品（Product）`
+
+  > 定义了产品的规范，描述了产品的主要特性和功能，抽象工厂模式有多个抽象产品。
+
+- `具体产品（ConcreteProduct）`
+
+  > 实现了抽象产品角色所定义的接口，由具体工厂来创建，它同具体工厂之间是多对一的关系。
+
+
+```java
+package com.car.abstracts.factory;
+
+
+import com.car.abstracts.enumeration.CarCategoryEnum;
+import com.car.abstracts.service.ChairService;
+import com.car.abstracts.service.EngineService;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
+/**
+ * description: CarFactory
+ * date: 2020/9/10 0:47
+ * author: Calvin
+ * version: 1.0
+ */
+public abstract class AutomobileSalesServiceFactory {
+
+    /**
+     * 创建发动机
+     */
+    abstract EngineService createEngine();
+
+    /**
+     * 创建座椅
+     */
+    abstract ChairService createChair();
+
+    /**
+     * 获取汽车品牌销售工厂
+     *
+     * @param brand 汽车品牌
+     * @return 相应的汽车品牌销售工厂
+     */
+    public static Object getBrandFactory(String brand) {
+        try {
+            CarCategoryEnum categoryEnum = CarCategoryEnum.valueOf(brand);
+            String beanName = categoryEnum.getFactoryBeanName();
+            Class<?> beanClass = Class.forName(beanName);
+            Object o = beanClass.newInstance();
+            return o;
+        } catch (Exception e) {
+            throw new RuntimeException("暂无该【"+ brand +"】品牌汽车!");
+        }
+    }
+
+    /**
+     * 汽车构建过程
+     * @param carBrandFactory 具体汽车品牌工厂
+     * @param sbuild 构建拼装
+     * @throws InvocationTargetException 调用目标异常
+     * @throws IllegalAccessException 非法访问异常
+     */
+    public static void build(Object carBrandFactory, StringBuilder sbuild) throws InvocationTargetException, IllegalAccessException {
+        Method[] declaredMethods = carBrandFactory.getClass().getDeclaredMethods();
+        for (Method m : declaredMethods) {
+            m.setAccessible(true);
+            if (m.getName().equals("createEngine")) {
+                EngineService engineService = (EngineService) m.invoke(carBrandFactory, null);
+                String run = engineService.run();
+                String start = engineService.start();
+                sbuild.append(run)
+                        .append("\n")
+                        .append(start)
+                        .append("\n");
+
+            }
+            if (m.getName().equals("createChair")) {
+                ChairService chairService = (ChairService) m.invoke(carBrandFactory, null);
+                String function = chairService.function();
+                sbuild.append(function).append("\n");
+            }
+        }
+    }
+
+}
+
+```
+
+```java
+package com.car.abstracts.factory;
+
+import com.car.abstracts.service.ChairService;
+import com.car.abstracts.service.EngineService;
+import com.car.abstracts.service.impl.NioCarChairServiceImpl;
+import com.car.abstracts.service.impl.NioCarEngineServiceImpl;
+
+/**
+ * description: NioCarFactory
+ * date: 2020/9/10 0:46
+ * author: Calvin
+ * version: 1.0
+ */
+public class NioCarFactory extends AutomobileSalesServiceFactory {
+
+    @Override
+    EngineService createEngine() {
+        return new NioCarEngineServiceImpl();
+    }
+
+    @Override
+    ChairService createChair() {
+        return new NioCarChairServiceImpl();
+    }
+}
+```
+
+```java
+package com.car.abstracts.factory;
+
+import com.car.abstracts.service.ChairService;
+import com.car.abstracts.service.EngineService;
+import com.car.abstracts.service.impl.VolkswagenChairServiceImpl;
+import com.car.abstracts.service.impl.VolkswagenEngineServiceImpl;
+
+/**
+ * description: NioCarFactory
+ * date: 2020/9/10 0:46
+ * author: Calvin
+ * version: 1.0
+ */
+public class VolkswagenFactory extends AutomobileSalesServiceFactory {
+    @Override
+    EngineService createEngine() {
+        return new VolkswagenEngineServiceImpl();
+    }
+
+    @Override
+    ChairService createChair() {
+        return new VolkswagenChairServiceImpl();
+    }
+}
+```
+
+```java
+package com.car.abstracts.factory;
+
+import com.car.abstracts.service.ChairService;
+import com.car.abstracts.service.EngineService;
+import com.car.abstracts.service.impl.VolkswagenChairServiceImpl;
+import com.car.abstracts.service.impl.VolkswagenEngineServiceImpl;
+
+/**
+ * description: NioCarFactory
+ * date: 2020/9/10 0:46
+ * author: Calvin
+ * version: 1.0
+ */
+public class VolkswagenFactory extends AutomobileSalesServiceFactory {
+    @Override
+    EngineService createEngine() {
+        return new VolkswagenEngineServiceImpl();
+    }
+
+    @Override
+    ChairService createChair() {
+        return new VolkswagenChairServiceImpl();
+    }
+}
+```
+
+```java
+package com.car.abstracts.service;
+
+/**
+ * description: 发动机
+ * date: 2020/9/10 0:19
+ * author: Calvin
+ * version: 1.0
+ */
+public interface EngineService {
+
+    /**
+     * 转速
+     */
+    String run();
+
+    /**
+     * 启动方式
+     */
+    String start();
+}
+```
+
+```java
+package com.car.abstracts.service.impl;
+
+import com.car.abstracts.service.ChairService;
+
+/**
+ * description: 蔚来-发动机
+ * date: 2020/9/10 0:24
+ * author: Calvin
+ * version: 1.0
+ */
+public class NioCarChairServiceImpl implements ChairService {
+
+    @Override
+    public String function() {
+        return "【蔚来】品牌的驾驶座椅和座位可以自动加热!";
+    }
+}
+```
+
+```java
+package com.car.abstracts.service.impl;
+
+import com.car.abstracts.service.EngineService;
+
+/**
+ * description: 蔚来-发动机
+ * date: 2020/9/10 0:24
+ * author: Calvin
+ * version: 1.0
+ */
+public class NioCarEngineServiceImpl implements EngineService {
+
+    @Override
+    public String run() {
+        return "【蔚来】品牌发动机是xxxx提速140码转速20000";
+    }
+
+    @Override
+    public String start() {
+        return "【蔚来】品牌是自动挡，启动快";
+    }
+}
+
+```
+
+```java
+package com.car.abstracts.service.impl;
+
+import com.car.abstracts.service.ChairService;
+
+/**
+ * description: 大众汽车-发动机
+ * date: 2020/9/10 0:23
+ * author: Calvin
+ * version: 1.0
+ */
+public class VolkswagenChairServiceImpl implements ChairService {
+
+    @Override
+    public String function() {
+        return "【大众】品牌座椅可以不能加热!";
+    }
+}
+
+```
+
+```java
+package com.car.abstracts.service.impl;
+
+import com.car.abstracts.service.EngineService;
+
+/**
+ * description: 大众汽车-发动机
+ * date: 2020/9/10 0:23
+ * author: Calvin
+ * version: 1.0
+ */
+public class VolkswagenEngineServiceImpl implements EngineService {
+
+    @Override
+    public String run() {
+        return "【大众】品牌发动机xxxx提速在140码转速2000";
+    }
+
+    @Override
+    public String start() {
+        return "【大众】品牌手动挡，启动慢";
+    }
+}
+```
+
+```java
+package com.car.abstracts.enumeration;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+/**
+ * description: 汽车品牌枚举
+ * date: 2020/9/9 15:33
+ * author: Calvin
+ * version: 1.0
+ */
+@Getter
+@AllArgsConstructor
+public enum CarCategoryEnum {
+
+    NIO("蔚来工厂", "蔚来", "com.car.abstracts.factory.NioCarFactory"),
+    VOLKSWAGEN("大众工厂", "一汽大众", "com.car.abstracts.factory.VolkswagenFactory"),
+    ;
+
+    /** 名称 */
+    private String factory;
+    /** 品牌 */
+    private String brand;
+    /** 具体实现类的路径 */
+    private String factoryBeanName;
+
+}
+```
+
+```java
+package com.car.abstracts.controller;
+
+import com.car.abstracts.factory.AutomobileSalesServiceFactory;
+import org.apache.ibatis.annotations.Param;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.lang.reflect.InvocationTargetException;
+
+/**
+ * description: 4S 汽车服务中心
+ * date: 2020/9/9 15:45
+ * author: Calvin
+ * version: 1.0
+ */
+@RestController(value = "CarController3")
+@RequestMapping(value = "car/choose")
+public class CarController {
+
+    @GetMapping("brand")
+    public String chooseBrand(@Param("name") String name) throws InvocationTargetException, IllegalAccessException {
+        // 1. 获取对应的品牌汽车工厂
+        Object carBrandFactory = AutomobileSalesServiceFactory.getBrandFactory(name);
+        // 2. 获取对应的品牌建造过程
+        StringBuilder sbuild = new StringBuilder();
+        AutomobileSalesServiceFactory.build(carBrandFactory,  sbuild);
+        return sbuild.toString();
+    }
+}
+```
+
+### 通过访问 :
+
+- **GET** http://localhost:8080/car/choose/brand?name=NIO
+
+- **GET** http://localhost:8080/car/choose/brand?name=VOLKSWAGEN
+
+### 运行结果:
+
+```verilog
+【蔚来】品牌的驾驶座椅和座位可以自动加热!
+【蔚来】品牌发动机是xxxx提速140码转速20000
+【蔚来】品牌是自动挡，启动快
+
+【大众】品牌座椅可以不能加热!
+【大众】品牌发动机xxxx提速在140码转速2000
+【大众】品牌手动挡，启动慢
+```
+
+### 优缺点:
+
+| <font color=#42b983 size=4px><b>优点</b></font>              | <font color=red size=4px><b>缺点</b></font>                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| <font color=42b983 size=4px><b>可以在类的内部对产品族中相关联的多等级产品共同管理，而不必专门引入多个新的类来进行管理</b></font> | <font color=red size=4px><b>当产品族中需要增加一个新的产品时，所有的工厂类都需要进行修改。</b></font> |
+| <font color=42b983 size=4px><b>当增加一个新的产品族时不需要修改原代码，满足开闭原则。</b></font> |                                                              |
+
+---
+
+## 五、总结-工厂模式-三种类型区别
+
+<br>
+
+| <font color=#e96900>简单工厂 </font>                         | <font color=#e96900> 工厂方法 </font>                        | <font color=#e96900>抽象工厂 </font>                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| <font size=4px>用来生产同一等级结构中的任意产品。<br>`（不支持拓展增加产品）`</font> | <font size=4px> 用来生产同一等级结构中的固定产品。<br>`（支持拓展增加产品）`  </font> | <font size=4px>用来生产不同产品族的全部产品。<br>`（不支持拓展增加产品；支持增加产品族）`</font> |
+
+
+

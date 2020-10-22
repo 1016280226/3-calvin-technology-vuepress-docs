@@ -1,1 +1,509 @@
 # 单例模式 (Singleton Pattern)
+
+## 一、单例模式是什么?
+
+### 单例模式（Singleton Pattern）
+
+- #### 指一个类只有一个实例，且该类能自行创建这个实例的一种模式。
+
+- #### 对于 Java 来说，单例模式可以`保证在一个 JVM 中只存在单一实例`。
+
+- #### 属于`创建型模式`。
+
+---
+
+## 二、作用 
+
+ - 在有些系统中，为了`节省内存资源`、
+ - `保证数据内容的一致性`，对某些类要求只能创建一个实例
+
+---
+
+## 三、应用场景
+
+>  - Servlet
+>  - Strust2
+>  - Spring
+>  - SpringMVC
+>  - 线程池 (某类需要频繁实例化，而创建的对象又频繁被销毁的时候)
+>  - 数据库连接池
+>  - 枚举
+>  - 常量
+>  - window 中的任务管理器
+>  - 网站的计数器
+>  - 应用程序中的日志收集
+
+---
+
+## 四、实现
+
+> 代码链接：https://github.com/1016280226/design-patterns
+
+### 5种创建方式
+
+ - `懒汉式`
+ - `饿汉式`
+ - `静态内部类方式`
+ - `枚举单例方式`
+ - `双重检测锁方式`
+
+### 案例1-饿汉式
+
+```java
+package com.singleton.create;
+
+/**
+ * description: 类初始化时,会立即加载该对象，线程天生安全,调用效率高。
+ * 单例模式-饿汉方式
+ * date: 2020/9/8 17:07
+ * author: Calvin <br>
+ * version: 1.0 <br>
+ */
+public class Hungry {
+
+    private Hungry() {
+        System.out.println("我是饿汉式，我可以立即初始化，并且线程安全，为什么了？ 因为我头上有个final不会被改变");
+    }
+
+    // 1. 定义一个全局变量，初始化对象
+    // 缺点： 当对象不使用时，它会占用内存资源，因为它是static静态标识(永久区)，启动时被加载到内存中去，所以在JVM中不能被回收。
+    // 线程安全：是因为使用了 static final 修饰，所以该对象不会被修改，所以线程是安全的。 
+    private static final Hungry hungry = new Hungry();
+    
+    /**
+     * 获取一个实例
+     */
+    private static Hungry getInstance() {
+        System.out.println("实例化....");
+        return hungry;
+    }
+
+    /**
+     * 运行测试
+     *
+     * @param args 参数
+     */
+    public static void main(String[] args) {
+        Hungry object1 = getInstance();
+        Hungry object2 = getInstance();
+
+        // 判断：2个对象是否相等，如果相等说明他是单例，否则不是
+        System.out.println(object1 == object2);
+    }
+
+}
+```
+
+#### 运行结果:
+
+```verilog
+我是饿汉式，我可以立即初始化，并且线程安全，为什么了？ 因为我头上有个final不会被改变
+实例化....
+实例化....
+true
+```
+
+#### 优缺点：
+
+> 优点：
+>
+> - 线程安全
+> - 调用效率比较高 （类初始化是，会立即加载该对象）
+>
+> 缺点： 
+>
+> - 当对象不使用时， 占用资源， JVM 不会回收。
+> - 不具备懒加载功能
+
+### 案例2-懒汉式
+
+```java
+package com.singleton.create;
+
+/**
+ * 单例模式-懒汉模式
+ * description: 类初始化时，不会创建对象，当需要才会初始化对象
+ * date: 2020/9/8 18:02
+ * author: Calvin
+ * version: 1.0
+ */
+public class Lazy {
+
+    private static Lazy lazy;
+
+    private Lazy(){
+        System.out.println("我是懒汉式，初始化时，我不会创建对象; 需要我的时候，我才会创建对象; 我线程不安全, 所以需要加上 synchronized锁, 加上后我的效率比较慢");
+    }
+
+
+    /**
+     * 获取一个实例
+     */
+    private synchronized static Lazy getInstance() {
+        System.out.println("实例化....");
+        if (lazy == null) {
+            lazy = new Lazy();
+        }
+        return lazy;
+    }
+
+    /**
+     * 运行测试
+     *
+     * @param args 参数
+     */
+    public static void main(String[] args) {
+        Lazy object1 = getInstance();
+        Lazy object2 = getInstance();
+
+        // 判断：2个对象是否相等，如果相等说明他是单例，否则不是
+        System.out.println(object1 == object2);
+    }
+
+}
+```
+
+#### 运行结果:
+
+```
+实例化....
+我是懒汉式，初始化时，我不会创建对象，需要我的时候，我才会创建对象， 我线程不安全, 所以需要加上 synchronized锁, 加上后我的效率比较慢
+实例化....
+true
+```
+
+#### 优缺点：
+
+>优点：
+>
+>- 节约资源。(类初始化时，不会创建对象，当需要才会初始化对象)
+>
+>缺点： 
+>
+>- 线程不安全。
+>- 加上 synchronized 锁后, 效率低。
+
+### 案例3-静态内部类方式
+
+```java
+package com.singleton.create;
+
+/**
+ * description: 静态内部类方式: 它结合了饿汉式和懒汉式优点: 线程安全、效率高、具有懒加载
+ * date: 2020/9/8 23:05
+ * author: Calvin
+ * version: 1.0
+ */
+public class StaticInnerClass {
+
+    private StaticInnerClass () {
+        System.out.println("我是静态内部类方式的单例模式，我结合了懒汉式和饿汉式的有优点;" +
+                "为什么我会有这个特性了？ 因为当外部类调用内部类, 内部类才会被初始化，所以我具备懒加载功能");
+    }
+
+    /**
+     * 一个静态内部类
+     */
+    public static class InnerClassSingleton {
+
+        static final StaticInnerClass staticInnerClass = new StaticInnerClass();
+
+    }
+
+    /**
+     * 获取一个实例
+     */
+    private static StaticInnerClass getInstance() {
+        System.out.println("实例化....");
+        return InnerClassSingleton.staticInnerClass;
+    }
+
+    /**
+     * 运行测试
+     *
+     * @param args 参数
+     */
+    public static void main(String[] args) {
+        StaticInnerClass object1 = getInstance();
+        StaticInnerClass object2 = getInstance();
+        // 判断：2个对象是否相等，如果相等说明他是单例，否则不是
+        System.out.println(object1 == object2);
+    }
+}
+```
+
+#### 运行结果：
+
+```java
+实例化....
+我是静态内部类方式的单例模式，我结合了懒汉式和饿汉式的有优点;为什么我会有这个特性了？ 因为当外部类调用内部类, 内部类才会被初始化，所以我具备懒加载功能
+实例化....
+true
+```
+
+#### 优缺点：
+
+> 优点： 结合了懒汉式和饿汉式各自的优点。
+>
+> - 真正需要对象的时候才会加载。
+> - 加载是线程安全的。
+>
+> 缺点：
+>
+> - 当对象比较多的时候，需要编写很多静态内部类。
+
+### 案例4-枚举单例方式
+
+```java
+package com.singleton.create;
+
+/**
+ * description: 单例模式-枚举方式
+ * date: 2020/9/8 22:24
+ * author: Calvin
+ * version: 1.0
+ */
+public class Enums {
+
+    /**
+     * 私有一个枚举单例
+     */
+    private enum EnumSingleton {
+        INSTANCE;
+        private Enums enums;
+
+        EnumSingleton() {
+            System.out.println("我是枚举 EnumSingleton，通过我的构造方法，创建当前类 Enums 对象");
+            enums = new Enums();
+        }
+
+        public Enums getInstance() {
+            return enums;
+        }
+
+    }
+
+    /**
+     * 获取实例化
+     * @return Enums 对象
+     */
+    public static Enums getInstance() {
+        System.out.println("实例化....");
+        return EnumSingleton.INSTANCE.getInstance();
+    }
+
+    public static void main(String[] args) {
+        Enums e01 = Enums.getInstance();
+        Enums e02 = Enums.getInstance();
+        System.out.println(e01 == e02);
+    }
+
+}
+```
+
+#### 运行结果：
+
+```
+实例化....
+我是枚举 EnumSingleton，通过我的构造方法，创建当前类 Enums 对象
+实例化....
+true
+```
+
+#### 优缺点：
+
+> 优点：
+>
+> - 实现简单、调用效率高，枚举本身就是单例（常量）。
+> - 天生线程安全，原因由 JVM 从根本上提供保障! 避免通过反射和反序列化的漏洞。
+>
+> 缺点：
+>
+> - 没有懒加载功能。
+
+### 案例5-双重检测锁方式
+
+提醒：因为JVM本质重排序的原因，可能会初始化多次，不推荐使用 ！
+
+```java
+package com.singleton.create;
+
+/**
+ * description: 双重检验锁
+ * date: 2020/9/8 23:22
+ * author: Calvin
+ * version: 1.0
+ */
+public class DoubleSynchronized {
+
+    private static DoubleSynchronized doubleSynchronized;
+
+    private DoubleSynchronized(){
+        System.out.println("我是双重检验锁，可能出现多次创建对象, 通过synchronized上锁, JVM本质重排序的原因, 性能最慢");
+    }
+
+    /**
+     * 获取一个实例
+     */
+    public DoubleSynchronized getInstance() {
+        
+        if (doubleSynchronized == null) {
+            synchronized (this) {
+                if (doubleSynchronized == null) {
+                    System.out.println("实例化....");
+                    doubleSynchronized = new DoubleSynchronized();
+                }
+            }
+        }
+        return doubleSynchronized;
+    }
+
+    /**
+     * 运行测试
+     *
+     * @param args 参数
+     */
+    public static void main(String[] args) {
+        DoubleSynchronized object1 = new DoubleSynchronized().getInstance();
+        DoubleSynchronized object2 = new DoubleSynchronized().getInstance();
+        // 判断：2个对象是否相等，如果相等说明他是单例，否则不是
+        System.out.println(object1 == object2);
+    }
+}
+
+```
+
+#### 运行结果：
+
+```verilog
+我是双重检验锁，可能出现多次创建对象, 通过synchronized上锁, JVM本质重排序的原因, 性能最慢
+实例化....
+我是双重检验锁，可能出现多次创建对象, 通过synchronized上锁, JVM本质重排序的原因, 性能最慢
+我是双重检验锁，可能出现多次创建对象, 通过synchronized上锁, JVM本质重排序的原因, 性能最慢
+true
+```
+
+---
+
+## 五、单例模式安全问题，是通过什么进行攻击？
+
+### 单例模式-通过JAVA反射机制破解
+
+```java
+/** 通过反射破解单例模式 */
+Class<?> class1 = Class.forName("com.singleton.create.SecuritySingleton");
+// 1. 获取该类的构造函数 
+Constructor<?>[] declaredConstructors = class1.getDeclaredConstructors();
+// 2. 设置允许访问
+declaredConstructors[0].setAccessible(Boolean.TRUE);
+// 3. 实例化
+SecuritySingleton o1 = (SecuritySingleton) declaredConstructors[0].newInstance();
+// 4. 获取方法，该方法是实例化对象
+Method method = class1.getDeclaredMethod("getInstance", null);
+method.setAccessible(true);
+// 5. 进行二次创建
+Object o2 = method.invoke(o1, null);
+// 6. 判断：2个对象是否相等，如果相等说明他是单例，否则不是
+System.out.println(o1 == o2);
+```
+
+## 六、 如何防止单例模式安全问题?
+
+### 重点思路：在构造函数中，只能允许初始化化一次即可。
+
+```java
+package com.singleton.create;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
+/**
+ * description: 单例防止反射漏洞攻击
+ * date: 2020/9/8 23:33
+ * author: Calvin
+ * version: 1.0
+ */
+public class SecuritySingleton {
+
+    /** 只能允许初始化化一次即可。**/
+    private static Boolean flag = false;
+
+    private static SecuritySingleton lazy;
+
+    private SecuritySingleton(){
+        /** 只能允许初始化化一次即可, 否则为不是相同标志位，则抛出异常 **/
+        if (flag == false) {
+            flag = !flag;
+            System.out.println("我是懒汉式，初始化时，我不会创建对象; 需要我的时候，我才会创建对象; 我线程不安全, 所以需要加上 synchronized锁, 加上后我的效率比较慢");
+        } else {
+            throw new RuntimeException("单例模式被侵犯！");
+        }
+
+    }
+
+
+    /**
+     * 获取一个实例
+     */
+    private SecuritySingleton getInstance() {
+        System.out.println("实例化....");
+        if (lazy == null) {
+            lazy = new SecuritySingleton();
+        }
+        return lazy;
+    }
+
+    /**
+     * 运行测试
+     *
+     * @param args 参数
+     */
+    public static void main(String[] args) throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchFieldException, NoSuchMethodException, InvocationTargetException {
+        /** 通过反射破解单例模式 */
+        Class<?> class1 = Class.forName("com.singleton.create.SecuritySingleton");
+        // 1. 获取该类的构造函数 
+        Constructor<?>[] declaredConstructors = class1.getDeclaredConstructors();
+        // 2. 设置允许访问
+        declaredConstructors[0].setAccessible(Boolean.TRUE);
+        // 3. 实例化
+        SecuritySingleton o1 = (SecuritySingleton) declaredConstructors[0].newInstance();
+        // 4. 获取方法，该方法是实例化对象
+        Method method = class1.getDeclaredMethod("getInstance", null);
+        method.setAccessible(true);
+        // 5. 进行二次创建
+        Object o2 = method.invoke(o1, null);
+        // 6. 判断：2个对象是否相等，如果相等说明他是单例，否则不是
+        System.out.println(o1 == o2);
+    }
+}
+
+```
+
+#### 运行结果：
+
+```verilog
+我是懒汉式，初始化时，我不会创建对象; 需要我的时候，我才会创建对象; 我线程不安全, 所以需要加上 synchronized锁, 加上后我的效率比较慢
+实例化....
+Exception in thread "main" java.lang.reflect.InvocationTargetException
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at com.singleton.create.SecuritySingleton.main(SecuritySingleton.java:55)
+Caused by: java.lang.RuntimeException: 单例模式被侵犯！
+	at com.singleton.create.SecuritySingleton.<init>(SecuritySingleton.java:25)
+	at com.singleton.create.SecuritySingleton.getInstance(SecuritySingleton.java:38)
+	... 5 more
+```
+
+## 七、总结
+
+<br>
+
+| <font color=#42b983>优点：</font>                           | <font color=red>缺点：</font>                                |
+| :---------------------------------------------------------- | :----------------------------------------------------------- |
+| 1. 单例模式可以保证内存里只有一个实例，`减少了内存的开销`。 | 1. `单例模式一般没有接口，扩展困难`。<br>(如果要扩展，则除了修改原来的代码，没有第二种途径，违背开闭原则。) |
+| 2. 可以`避免对资源的多重占用`。                             | 2. `在并发测试中，单例模式不利于代码调试`。<br>(在调试过程中，如果单例中的代码没有执行完，也不能模拟生成一个新的对象。) |
+| 3. 单例模式设置全局访问点，`可以优化和共享资源的访问`。     | 3. 单例模式的功能代码通常写在一个类中，如果功能设计不合理，则很`容易违背单一职责原则。` |
