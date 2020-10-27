@@ -1,13 +1,15 @@
 const load = require("./routerLayout")
 
 // 基础篇
-const javaFiles = load("../base/java", "../base/java/extend")
+const javaFiles = load("../base/java",null,"../base/java/extend")
 const javaExtendFiles = load("../base/java/extend")
 const groovyFiles = load("../base/groovy")
 const linuxFiles = load("../base/linux")
+
 // 进阶篇
 const dataBaseFiles = load("../advanced/data/base")
 const dataIdeaFiles = load("../advanced/data/idea")
+
 // 高级篇
 const concurrentFiles = load("../high/concurrent")
 const jvmFiles = load("../high/performance/jvm")
@@ -15,6 +17,7 @@ const mysqlFiles = load("../high/performance/mysql")
 const tomcatFiles = load("../high/performance/tomcat8")
 const iterableFiles = load("../high/collection/iterable")
 const mapFiles = load("../high/collection/map")
+
 // 框架篇
 const doubleFrameworkFiles = load("../framework/double")
 const hibernateFrameworkFiles = load("../framework/hibernate")
@@ -23,6 +26,18 @@ const mybatisFrameworkFiles = load("../framework/mybatis")
 const springFrameworkFiles = load("../framework/spring")
 const springmvcFrameworkFiles = load("../framework/springmvc")
 const springbootFrameworkFiles = load("../framework/springboot")
+
+// 运维篇
+const dockerFiles = load("../devops/docker")
+const gitlabFiles = load("../devops/gitlab")
+const sonarqubeFiles = load("../devops/sonarqube")
+const jenkinsIntegrationFiles = load("../devops/jenkins/integration")
+const jenkinsIntroduceFiles = load("../devops/jenkins/introduce")
+const jenkinsPiplineFiles = load("../devops/jenkins/pipeline")
+const k8sBaseFiles = load("../devops/kubernetes/base")
+const k8sHelmFiles = load("../devops/kubernetes/helm")
+const k8sTidbFiles = load("../devops/kubernetes/tidb")
+
 
 // 面试篇
 const backInterviewFiles = load("../interview/back")
@@ -175,6 +190,12 @@ module.exports = {
                     title: "运维篇",
                     collapsable: false,
                     children: [
+                        '/devops/docker/00-docker-introduce',
+                        '/devops/kubernetes/base/00-kubernetes-introduce',
+                        '/devops/gitlab/00-gitlab-introduce',
+                        '/devops/sonarqube/00-sonarqube-introduce',
+                        '/devops/jenkins/introduce/00-jenkins-introduce',
+                        
                     ]
                 },
                 {
@@ -391,6 +412,61 @@ module.exports = {
                     collapsable: false,
                     children: springbootFrameworkFiles
                 },
+            ],
+
+
+            /** 运维篇 */
+            '/devops/docker/': [
+                {
+                    collapsable: false,
+                    children: dockerFiles
+                },
+            ],
+            '/devops/kubernetes/': [
+                {  
+                    title: 'kubernetes 船舵篇',
+                    collapsable: false,
+                    children: k8sBaseFiles
+                },
+                {
+                    title: "Helm 图表篇",
+                    collapsable: false,
+                    children: k8sHelmFiles
+                },
+                {
+                    title: "TIDB 分布式数据库篇",
+                    collapsable: false,
+                    children: k8sTidbFiles
+                }
+            ],
+            '/devops/gitlab/': [
+                {
+                    collapsable: false,
+                    children: gitlabFiles
+                },
+            ],
+            '/devops/sonarqube/': [
+                {
+                    collapsable: false,
+                    children: sonarqubeFiles
+                },
+            ],
+            '/devops/jenkins/': [
+                {  
+                    title: '基本篇',
+                    collapsable: false,
+                    children: jenkinsIntroduceFiles
+                },
+                {
+                    title: "集成篇",
+                    collapsable: false,
+                    children: jenkinsIntegrationFiles
+                },
+                {
+                    title: "流水线篇",
+                    collapsable: false,
+                    children: jenkinsPiplineFiles
+                }
             ],
 
             /** 面试篇 */

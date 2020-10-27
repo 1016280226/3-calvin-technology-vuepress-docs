@@ -1054,8 +1054,251 @@ public class HashMap<K,V> extends AbstractMap<K,V> implements Map<K,V>, Cloneabl
 ... 
 }
 ```
-
 ::: details  <font class=details-title> 构造方法、属性、常量->  分析结论：</font>
+
+
+### 2. put 方法
+
+```java
+ public V put(K key, V value) {
+        return putVal(hash(key), key, value, false, true);
+ }
+ 
+/**
+ * 1. 分析 hash(key)
+ * key == null 时， 将存在数组第0个下标Index中。
+ * key =! null 时， 获取 key哈希值 ^ (key哈希值 >>> 16)
+ * 
+ * 注意：>> 和 >>> 区别 ？
+ *  
+ */
+static final int hash(Object key) {
+        int h;
+        return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
+}
+
+/**
+ * 2. 分析 putVal 方法
+ */
+final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
+                   boolean evict) {
+        /**
+         * n: 表示数组长度 （n = (tab = resize()).length;）
+         * i: 标识数组下标index (tab[i = (n - 1) & hash])
+         * p: 表示单链表，作用于临时变量接收。
+         * tab: 标识单链表数组对象，作用于临时对象接收。
+         */
+        Node<K,V>[] tab; Node<K,V> p; int n, i;
+        if ((tab = table) == null || (n = tab.length) == 0)
+            // 当初始数组对象为空 || 数组长度为0，将进行数组扩容 （懒加载）
+            // 默认：数组扩容大小为16
+            n = (tab = resize()).length;
+        if ((p = tab[i = (n - 1) & hash]) == null)
+            /**** 说明了没有index冲突(hash碰撞)，将键值对和hash,存入到单链表数组对象中。 ****/
+            // p = tab[i = (n - 1) & hash] 获取tab[index]对象赋值给p单链表，如果单链表对象 == null
+            tab[i] = newNode(hash, key, value, null);
+        else {
+            /***** 否则，有可能hash碰撞 || 对象key相同，进行覆盖Value值 *****/
+            // e: 表示单链表 k：表示 key键
+            Node<K,V> e; K k;
+            // 条件1：p.hash == hash && (k = p.key) == key
+            // 条件2：p.hash == hash && key != null && key.equals(k)
+            // - 说明一个原则（相同对象值相等，哈希值也是相等），它的作用是key相同覆盖Value值。
+            if (p.hash == hash &&
+                ((k = p.key) == key || (key != null && key.equals(k))))
+                // 将 p 赋值给 e
+                e = p;
+            // p 是否为红黑树结构，说明有hash地址冲突，将keyValue添加到红黑树中。
+            else if (p instanceof TreeNode)
+                e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
+            // 否则为链表结构，说明有hash地址冲突，将keyValue添加到单链表中。
+            else {
+                for (int binCount = 0; ; ++binCount) {
+                    // (e = p.next) == null: 表示将单链表对象添加到第1个下标Index
+                    if ((e = p.next) == null) {
+                        p.next = newNode(hash, key, value, null);
+                        // binCount >= 8-1 -> binCount >=7 : 表示链表长度大于等于7时，将数链表转换成                         // 为红黑树
+                        if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
+                            treeifyBin(tab, hash);
+                        break;
+                    }
+                    // 单链表hash值和传入hash值相等，并且Key等于单链表中key: 说明要修改链表中的Key,需要					// 覆盖的Value值
+                    if (e.hash == hash &&
+                        ((k = e.key) == key || (key != null && key.equals(k))))
+                        break;
+                    p = e;
+                }
+            }
+            // e != null, 进行key相同覆盖Value值。
+            if (e != null) { // existing mapping for key
+                V oldValue = e.value;
+                if (!onlyIfAbsent || oldValue == null)
+                    e.value = value;
+                afterNodeAccess(e);
+                return oldValue;
+            }
+        }
+        // modCount 在添加时，才做+1，修改不做。这个作用为了防止遍历时，产生乱序结果。（Fast++机制）
+        ++modCount;
+        // 如果 ++size > 12, 就提前进行扩容。
+        if (++size > threshold)
+            // 当阈值为12时，进行第二次扩容
+            resize();
+        afterNodeInsertion(evict);
+        return null;
+    }
+
+
+
+```
+
+```java
+/**
+ * resize 扩容
+ */
+final Node<K,V>[] resize() {
+        // 旧的数组，第一次为null
+        // 旧的数据，第二次不为null
+        Node<K,V>[] oldTab = table;
+        // 旧数组容量，第一次为0
+        // 旧数组容量，第二次为16
+        int oldCap = (oldTab == null) ? 0 : oldTab.length;
+        // 旧数组阈值（数组下标元素个数），第一次进来为0
+        // 旧数组阈值（数组下标元素个数），第一次进来为12
+        int oldThr = threshold;
+        // 新的容量和新的阈值为0
+        int newCap, newThr = 0;
+        // 第二次进来，16>0
+        if (oldCap > 0) {
+            // 第二次进来，16> 超过最大限制容量数
+            if (oldCap >= MAXIMUM_CAPACITY) {
+                // 设置阈值为整形的最大值
+                threshold = Integer.MAX_VALUE;
+                // 直接返回最后一次数组，不能够再进行扩容。
+                return oldTab;
+            }
+            // 否则，第二次 newCap =16x2=32 < 大限制容量数 && 老数组容量要（16）>= 16
+            else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY &&
+                     oldCap >= DEFAULT_INITIAL_CAPACITY)
+                // 所以新的阈值为 12x2=24
+                newThr = oldThr << 1; // double threshold
+        }
+        else if (oldThr > 0) // initial capacity was placed in threshold
+            newCap = oldThr;
+        else {
+             
+            // 第一次进来，进行扩容，将新的数组长度为16、阈值为0.75* 16=12
+            newCap = DEFAULT_INITIAL_CAPACITY;
+            newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
+        }
+        if (newThr == 0) {
+            float ft = (float)newCap * loadFactor;
+            newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ?
+                      (int)ft : Integer.MAX_VALUE);
+        }
+        // 第一次：将新的阈值赋值给全局变量阈值 threshod 12
+        // 第二次：将新的阈值赋值给全局变量阈值 threshod 24
+        threshold = newThr;
+        @SuppressWarnings({"rawtypes","unchecked"})
+        // 第一次：产生新的数组，容量为16
+        // 第二次：产生新的数组，容量为32
+        Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
+        // 第一次：将新的数组tab 赋值给全局变量 table[]长度为16 
+        // 第二次：将新的数组tab 赋值给全局变量 table[]长度为32
+        table = newTab;
+        // 第二次：如果老的数组 table 不为空，也就是说 oldTab 数组是为16的容量 
+        if (oldTab != null) {
+            // 第二次：遍历旧数组长16
+            for (int j = 0; j < oldCap; ++j) {
+                Node<K,V> e;
+                if ((e = oldTab[j]) != null) {
+                    /** 
+                     * 如果数组链表Node中没有存在冲突的Next节点，就清空当前旧数组对应的下标（Node）
+                     * 重新计算Node 下标地址，放入到新的数组中
+                     */
+                    oldTab[j] = null;
+                    if (e.next == null)
+                        newTab[e.hash & (newCap - 1)] = e;
+                    /**
+                     * 否则，e.next 中存在节点，判断是否是红黑数
+                     */
+                    else if (e instanceof TreeNode)
+                        ((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
+                    /**
+                     * 否则，e.next 中存在节点，是链表
+                     */
+                    else { // preserve order
+                         /** 如果链表长度小于7，将链表分为2个部分**/
+                        // 低位链表
+                        Node<K,V> loHead = null, loTail = null;
+                        // 高位链表
+                        Node<K,V> hiHead = null, hiTail = null;
+                        Node<K,V> next;
+                        do {
+                            next = e.next;
+                            // 计算链表Node中在数组中地址，如果算出来为0的进入低位链表
+                            if ((e.hash & oldCap) == 0) {
+                                if (loTail == null)
+                                    loHead = e;
+                                else
+                                    loTail.next = e;
+                                loTail = e;
+                            }
+                            // 否则，进入高位链表
+                            else {
+                                if (hiTail == null)
+                                    hiHead = e;
+                                else
+                                    hiTail.next = e;
+                                hiTail = e;
+                            }
+                        } while ((e = next) != null);
+                        if (loTail != null) {
+                            loTail.next = null;
+                            // 低位放（原来下标位）
+                            newTab[j] = loHead;
+                        }
+                        if (hiTail != null) {
+                            hiTail.next = null;
+                            // 高位放（原来下标位 + 16/32/48/..../(n-1)x2<MAXIMUM_CAPACITY）
+                            newTab[j + oldCap] = hiHead;
+                        }
+                    }
+                }
+            }
+        }
+        return newTab;
+    }
+```
+
+```java
+    /**
+     * 单链表转换成红黑树
+     */
+    final void treeifyBin(Node<K,V>[] tab, int hash) {
+        int n, index; Node<K,V> e;
+        // 数组长度 < 64 时，进行扩容。
+        if (tab == null || (n = tab.length) < MIN_TREEIFY_CAPACITY)
+            resize();
+        // 否则
+        else if ((e = tab[index = (n - 1) & hash]) != null) {
+            TreeNode<K,V> hd = null, tl = null;
+            do {
+                TreeNode<K,V> p = replacementTreeNode(e, null);
+                if (tl == null)
+                    hd = p;
+                else {
+                    p.prev = tl;
+                    tl.next = p;
+                }
+                tl = p;
+            } while ((e = e.next) != null);
+            if ((tab[index] = hd) != null)
+                hd.treeify(tab);
+        }
+    }
+
+```
 
 - #### HashMap 1.8 中，通过位移运算符 >>> 进行运算，加快了底层执行效率。
 
