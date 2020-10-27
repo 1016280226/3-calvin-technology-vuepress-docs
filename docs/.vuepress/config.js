@@ -1,7 +1,9 @@
 const load = require("./routerLayout")
 
 // 基础篇
-const javaFiles = load("../base/java")
+const javaFiles = load("../base/java", "../base/java/extend")
+const javaExtendFiles = load("../base/java/extend")
+const groovyFiles = load("../base/groovy")
 const linuxFiles = load("../base/linux")
 // 进阶篇
 const dataBaseFiles = load("../advanced/data/base")
@@ -13,6 +15,14 @@ const mysqlFiles = load("../high/performance/mysql")
 const tomcatFiles = load("../high/performance/tomcat8")
 const iterableFiles = load("../high/collection/iterable")
 const mapFiles = load("../high/collection/map")
+// 框架篇
+const doubleFrameworkFiles = load("../framework/double")
+const hibernateFrameworkFiles = load("../framework/hibernate")
+const jpaFrameworkFiles = load("../framework/jpa")
+const mybatisFrameworkFiles = load("../framework/mybatis")
+const springFrameworkFiles = load("../framework/spring")
+const springmvcFrameworkFiles = load("../framework/springmvc")
+const springbootFrameworkFiles = load("../framework/springboot")
 
 // 面试篇
 const backInterviewFiles = load("../interview/back")
@@ -121,6 +131,7 @@ module.exports = {
                     collapsable: false,
                     children: [
                         '/base/java/00-java-introduce',
+                        '/base/groovy/00-groovy-introduce',
                         '/base/linux/00-linux-introduce'
                     ]
                 },
@@ -145,6 +156,13 @@ module.exports = {
                     title: "框架篇",
                     collapsable: false,
                     children: [
+                        '/framework/hibernate/00-hibernate-introduce.md',
+                        '/framework/jpa/00-jpa-introduce.md',
+                        '/framework/mybatis/00-mybatis3-introduce.md',
+                        '/framework/spring/00-spring5-introduce.md',
+                        '/framework/springmvc/00-springmvc-introduce.md',
+                        '/framework/springboot/00-springboot2-introduce.md',
+                        '/framework/double/00-double-introduce.md'
                     ]
                 },
                 {
@@ -180,11 +198,24 @@ module.exports = {
                     ]
                 }
             ],
+
+            /**  基础篇 */
             '/base/java/': [
                 {
-                    // title: "Java 基础教程",
+                    title: "基础篇",
                     collapsable: false,
                     children: javaFiles
+                },
+                {
+                    title: "扩展篇",
+                    collapsable: false,
+                    children: javaExtendFiles
+                }
+            ],
+            '/base/groovy/': [
+                {
+                    collapsable: false,
+                    children: groovyFiles
                 }
             ],
             '/base/linux/': [
@@ -193,6 +224,8 @@ module.exports = {
                     children: linuxFiles
                 }
             ],
+
+            /** 高级篇  */
             '/advanced/data/': [
                 {
                     title: "引言简介",
@@ -315,6 +348,52 @@ module.exports = {
                     children: mapFiles
                 }
             ],
+
+            /** 架构篇 */
+            '/framework/double/': [
+                {
+                    collapsable: false,
+                    children: doubleFrameworkFiles
+                },
+            ],
+            '/framework/hibernate/': [
+                {
+                    collapsable: false,
+                    children: hibernateFrameworkFiles
+                },
+            ],
+            '/framework/jpa/': [
+                {
+                    collapsable: false,
+                    children: jpaFrameworkFiles
+                },
+            ],
+            '/framework/mybatis/': [
+                {
+                    collapsable: false,
+                    children: mybatisFrameworkFiles
+                },
+            ],
+            '/framework/spring/': [
+                {
+                    collapsable: false,
+                    children: springFrameworkFiles
+                },
+            ],
+            '/framework/springmvc/': [
+                {
+                    collapsable: false,
+                    children: springmvcFrameworkFiles
+                },
+            ],
+            '/framework/springboot/': [
+                {
+                    collapsable: false,
+                    children: springbootFrameworkFiles
+                },
+            ],
+
+            /** 面试篇 */
             '/interview/back/': [
                 {  
                     collapsable: false,
